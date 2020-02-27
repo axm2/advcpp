@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cassert>
 using namespace std;
+
 template <class T>
 class SA
 {
@@ -111,6 +112,64 @@ ostream &operator<<(ostream &os, SA<double> s)
         cout << s.p[i];
     return os;
 };
+
+template <class T>
+class SM
+{
+private:
+    int lowx, highx, lowy, highy;
+    SA<SA<T>> *matrix;
+
+public:
+    SM()
+    {
+        lowx = 0;
+        lowy = 0;
+        highx = -1;
+        highy = -1;
+        matrix = NULL;
+    }
+
+    SM(int hx, int hy)
+    {
+        lowx = 0;
+        lowy = 0;
+        highx = hx;
+        highy = hy;
+        matrix = new SA<SA<T>>(hx);
+    }
+
+    SM(int lx, int hx, int ly, int hy)
+    {
+        lowx = lx;
+        highx = hx;
+        lowy = ly;
+        highy = hy;
+        matrix = new SA<SA<T>>(lx, hx);
+    }
+
+    SM(const SM &s)
+    {
+        int sizex = s.highx - s.lowx + 1;
+        int sizey = s.highy - s.lowy + 1;
+        matrix = new SA<SA>(s.lowx, s.highx); // do I need to do SA<SA<T>> or do I do SA<SA>
+        for(int i=0;i<sizex;i++){
+            matrix[i] = new SA<T>(s.lowy, s.highy);
+        }
+        lowx = s.lowx;
+        highx = s.highx;
+        lowy = s.lowy;
+        highy = s.highy;
+
+    }
+
+    // Don't need an explicit destructor because we already wrote a SA destructor
+    // Don't need to overload brackets, because SA operator already overloaded
+    // TODO: Need to overload '='
+    // TODO: Need to overload '*'
+    // TODO: Need to set left shift operator as a friend function
+};
+
 int main()
 {
     SA<SA<int>> a(3);
@@ -132,7 +191,6 @@ int main()
     cout << a[1] << endl;
     cout << a[2] << endl;
     //cout << b << endl;
-
 
     return 0;
 }
