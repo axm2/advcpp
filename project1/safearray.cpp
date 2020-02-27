@@ -136,7 +136,11 @@ public:
         lowy = 0;
         highx = hx;
         highy = hy;
-        matrix = new SA<SA<T>>(hx);
+        matrix = new SA<SA<T>>(hy);
+        for(int i=0;i<hy+1;i++){
+            SA<T> innerSA (hx);
+            (*matrix)[i] = innerSA;
+        }
     }
 
     SM(int lx, int hx, int ly, int hy)
@@ -145,16 +149,16 @@ public:
         highx = hx;
         lowy = ly;
         highy = hy;
-        matrix = new SA<SA<T>>(lx, hx);
+        matrix = new SA<SA<T>>(ly, hy);
     }
 
     SM(const SM &s)
     {
         int sizex = s.highx - s.lowx + 1;
         int sizey = s.highy - s.lowy + 1;
-        matrix = new SA<SA>(s.lowx, s.highx); // do I need to do SA<SA<T>> or do I do SA<SA>
-        for(int i=0;i<sizex;i++){
-            matrix[i] = new SA<T>(s.lowy, s.highy);
+        matrix = new SA<SA<T>>(s.lowy, s.highy); // do I need to do SA<SA<T>> or do I do SA<SA>
+        for(int i=0;i<sizey;i++){
+            matrix[i] = new SA<T>(s.lowx, s.highx);
         }
         lowx = s.lowx;
         highx = s.highx;
@@ -164,7 +168,9 @@ public:
     }
 
     // Don't need an explicit destructor because we already wrote a SA destructor
-    // Don't need to overload brackets, because SA operator already overloaded
+    SA<T>& operator[](int i ){
+        return (*matrix)[i];
+    }
     // TODO: Need to overload '='
     // TODO: Need to overload '*'
     // TODO: Need to set left shift operator as a friend function
@@ -191,6 +197,9 @@ int main()
     cout << a[1] << endl;
     cout << a[2] << endl;
     //cout << b << endl;
+
+    SM<int> f(3,3);
+    cout << f[0][0] << endl;
 
     return 0;
 }
