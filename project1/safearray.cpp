@@ -238,9 +238,11 @@ public:
                         (*product)[i][j] += (*this)[i][k] * (*s.matrix)[k][j];
                     }
         }
-        SM<T>ans(lowx,highx,s.lowy,s.highy);
-        for(int i=lowx;i<=highx;i++){
-            for(int j=s.lowy;j<=s.highy;j++){
+        SM<T> ans(lowx, highx, s.lowy, s.highy);
+        for (int i = lowx; i <= highx; i++)
+        {
+            for (int j = s.lowy; j <= s.highy; j++)
+            {
                 ans[i][j] = (*product)[i][j];
             }
         }
@@ -248,17 +250,41 @@ public:
         return ans;
     }
 
-
     //destructor
     ~SM()
     {
         delete matrix; // deletes the outer matrix; the inner matrices are auto destroyed
     }
-    // TODO: Need to set left shift operator as a friend function
+
+    friend ostream &operator<<(ostream &os, SM s);
+};
+ostream &operator<<(ostream &os, SM<int> s)
+{
+    for (int i = s.lowx; i <= s.highx; i++)
+    {
+        for (int j = s.lowy; j <= s.highy; j++)
+        {
+            cout << s[i][j] << " ";
+        }
+        cout << endl;
+    }
+    return os;
+};
+ostream &operator<<(ostream &os, SM<double> s)
+{
+    for (int i = s.lowx; i <= s.highx; i++)
+    {
+        for (int j = s.lowy; j <= s.highy; j++)
+        {
+            cout << s[i][j] << " ";
+        }
+    }
+    return os;
 };
 
 int main()
 {
+    // Making a safe array of safearrays without using safe matrix class
     SA<SA<int>> a(3);
     SA<int> b(3), c(3), d(3);
     a[0] = b;
@@ -273,12 +299,13 @@ int main()
     a[2][0] = 7;
     a[2][1] = 8;
     a[2][2] = 9;
-    //b[0] = 4;
+    // printing using safe array's left shift operator
+    cout << "Printing matrix A" << endl;
     cout << a[0] << endl;
     cout << a[1] << endl;
     cout << a[2] << endl;
-    //cout << b << endl;
-
+    cout << endl;
+    // Creating a safe array of safe arrays using the safe matrix's 2 parameter constructor
     SM<int> f(3, 3);
     int q = 1;
     for (int i = 0; i < 3; i++)
@@ -288,10 +315,12 @@ int main()
             f[i][j] = q++;
         }
     }
+    cout << "Printing matrix F" << endl;
     cout << f[0] << endl;
     cout << f[1] << endl;
     cout << f[2] << endl;
-
+    cout << endl;
+    // Creating another using SM class using 2 param constructor
     SM<int> g(2, 4);
     g[0][0] = 3;
     g[0][1] = 2;
@@ -301,10 +330,11 @@ int main()
     g[1][1] = 1;
     g[1][2] = 3;
     g[1][3] = 0;
-
-    cout << g[0] << endl
-         << g[1] << endl;
-
+    // Printing using SM left shift operator
+    cout << "Printing matrix G" << endl;
+    cout << g;
+    cout << endl;
+    // Creating using 4 param constructor
     SM<int> h(0, 1, 0, 3);
     h[0][0] = 3;
     h[0][1] = 2;
@@ -315,21 +345,24 @@ int main()
     h[1][2] = 3;
     h[1][3] = 0;
 
-    cout << h[0] << endl
-         << h[1] << endl;
-
+    cout << "Printing matrix H" << endl;
+    cout << h;
+    cout << endl;
+    // Creating safe matrix using assignment operator and copy constructor
     SM<int> i = h;
-
-    cout << i[0] << endl
-         << i[1] << endl;
+    cout << "Printing matrix I" << endl;
+    cout << i;
+    cout << endl;
 
     SM<int> threebyfour(0, 0, 0, 1);
     threebyfour[0][0] = 3;
     threebyfour[0][1] = 4;
-
+    // Demonstrates multiply operator, assignment operator, and copy constructor
     SM<int> product = (threebyfour * h);
-
-    cout << product[0] << endl;
+    // Demonstrates printing using the overloaded left shift for SM class
+    cout << "Printing product matrix of threebyfour and H" << endl;
+    cout << product << endl;
+    cout << endl;
 
     return 0;
 }
