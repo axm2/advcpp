@@ -170,19 +170,19 @@ public:
         highx = s.highx;
         lowy = s.lowy;
         highy = s.highy;
-        matrix = new SA<SA<T>>(s.lowx, s.highx);
-        for (int i = s.lowx; i <= s.highx; i++)
+        matrix = new SA<SA<T>>(lowx, highx);
+        for (int i = lowx; i <= highx; i++)
         {
             SA<T> innerSA(s.lowy, s.highy);
-            for (int j = s.lowy; j <= s.highy; j++)
+            for (int j = lowy; j <= highy; j++)
             {
-                innerSA[j] = s.matrix[0][i][j]; // I don't know why this works, but it does.
+                innerSA[j] = (*s.matrix)[i][j];
             }
             (*matrix)[i] = innerSA;
         }
     }
 
-    SA<T> &operator[](int i)
+    SA<T> &operator[](int i) const
     {
         return (*matrix)[i];
     }
@@ -204,14 +204,14 @@ public:
             SA<T> innerSA(s.lowy, s.highy);
             for (int j = s.lowy; j <= s.highy; j++)
             {
-                innerSA[j] = s.matrix[0][i][j]; // I don't know why this works, but it does.
+                innerSA[j] = (*s.matrix)[i][j];
             }
             (*matrix)[i] = innerSA;
         }
         return *this;
     }
 
-    SM &operator*(const SM &s)
+    SM operator*(const SM &s) const
     {
 
         int r1 = highx - lowx + 1;
@@ -229,24 +229,31 @@ public:
             for (i = lowx; i <= highx; ++i)
                 for (j = s.lowy; j <= s.highy; ++j)
                 {
-                    product[0][i][j] = 0;
+                    (*product)[i][j] = 0;
                 }
             for (i = lowx; i <= highx; ++i)
                 for (j = s.lowy; j <= s.highy; ++j)
                     for (k = lowy; k <= highy; ++k)
                     {
-                        product[0][i][j] += (*this)[i][k] * s.matrix[0][k][j];
+                        (*product)[i][j] += (*this)[i][k] * (*s.matrix)[k][j];
                     }
         }
-        return *product;
+        SM<T>ans(lowx,highx,s.lowy,s.highy);
+        for(int i=lowx;i<=highx;i++){
+            for(int j=s.lowy;j<=s.highy;j++){
+                ans[i][j] = (*product)[i][j];
+            }
+        }
+        delete product;
+        return ans;
     }
+
 
     //destructor
     ~SM()
     {
         delete matrix; // deletes the outer matrix; the inner matrices are auto destroyed
     }
-    // TODO: Need to overload '*'
     // TODO: Need to set left shift operator as a friend function
 };
 
@@ -320,7 +327,7 @@ int main()
     threebyfour[0][0] = 3;
     threebyfour[0][1] = 4;
 
-    SM<int> product = threebyfour * h;
+    SM<int> product = (threebyfour * h);
 
     cout << product[0] << endl;
 
