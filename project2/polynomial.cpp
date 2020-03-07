@@ -19,7 +19,7 @@ int main()
     ifstream infile(filename);
     int i;
     string s;
-    cout << "Original polynomials: " << endl;
+    cout << "The inputs : " << endl;
     while (!infile.eof())
     {
         getline(infile, s);
@@ -28,9 +28,16 @@ int main()
         {
             if (counter % 2 == 0) // Coeff
             {
-                if (i == 1)
+                if (counter ==0){
+                    cout << i;
+                }
+                else if (i == 1)
                 {
-                    cout << "+";
+                    cout;
+                }
+                else if (i == 0)
+                {
+                    cout << i;
                 }
                 else if (i > 0)
                 {
@@ -88,6 +95,7 @@ int main()
         canonical(arr, coeffAndExpCount);
         delete[] arr;
     }
+    cout << endl;
 
     // printing summed pairs ---------------------------------------------------
 
@@ -96,7 +104,7 @@ int main()
     string s2;
     string s3;
     int k;
-    cout << "Summed pairs: " << endl;
+    cout << "Sum: ";
     while (!infile3.eof())
     {
         int arrindex = 0;
@@ -123,6 +131,7 @@ int main()
         canonical(arr, coeffAndExpCount);
         delete[] arr;
     }
+    cout << endl;
 
     // printing subtracted pairs ---------------------------------------------
 
@@ -131,7 +140,7 @@ int main()
     string t2;
     string t3;
     int l;
-    cout << "subtracted pairs: " << endl;
+    cout << "Difference: ";
     while (!infile4.eof())
     {
         int arrindex = 0;
@@ -160,6 +169,76 @@ int main()
         canonical(arr, coeffAndExpCount);
         delete[] arr;
     }
+    cout << endl;
+
+    ifstream infile5(filename);
+    string u1;
+    string u2;
+    string u3;
+    int m;
+    cout << "Product: ";
+    while(!infile5.eof())
+    {
+        int arrindex = 0;
+        int smallarr1index = 0;
+        int smallarr2index = 0;
+        int *arr;
+        int *smallarr1;
+        int *smallarr2;
+        int x1;
+        int x2;
+        getline(infile5, u1);
+        getline(infile5, u2);
+        stringstream v1(u1);
+        stringstream v2(u2);
+        int coeffAndExpCount1 = 0;
+        int coeffAndExpCount2 = 0;
+        for (char const &c : u1)
+        {
+            if (isspace(c))
+            {
+                coeffAndExpCount1++;
+            }
+        }
+        coeffAndExpCount1++;
+        for (char const &d : u2)
+        {
+            if (isspace(d))
+            {
+                coeffAndExpCount2++;
+            }
+        }
+        coeffAndExpCount2++;
+
+        smallarr1 = new int[coeffAndExpCount1]();
+        smallarr2 = new int[coeffAndExpCount2]();
+        while( v1 >> x1)
+        {
+            smallarr1[smallarr1index++] = x1;
+        }
+        while ( v2 >> x2)
+        {
+            smallarr2[smallarr2index++] = x2;
+        }
+
+        int biggerCoeffAndExpCount = (coeffAndExpCount1*coeffAndExpCount2);
+        arr = new int[biggerCoeffAndExpCount]();
+        int outercounter=0;
+        for (int i=0;i<coeffAndExpCount1;i=i+2){
+            for(int j=0;j<coeffAndExpCount2;j=j+2){
+                arr[outercounter] = smallarr1[i] * smallarr2[j];
+                outercounter++;
+                arr[outercounter] = smallarr1[i+1] + smallarr2[j+1];
+                outercounter++;
+            }
+        }
+        canonical(arr, biggerCoeffAndExpCount);
+        delete[] arr;
+        delete[] smallarr1;
+        delete[] smallarr2;
+
+    }
+    cout << endl;
 }
 
 void print(int *arr, int size)
@@ -170,20 +249,31 @@ void print(int *arr, int size)
         { // coeff
             if (arr[i] == 1)
             {
-                cout << "+";
+                cout;
             }
             else if (arr[i] > 0)
             {
-                cout << "+" << arr[i];
+                if (i == 0)
+                {
+                    cout << arr[i];
+                }
+                else
+                {
+                    cout << "+" << arr[i];
+                }
             }
-            else if (arr[i] <= 0)
+            else if (arr[i] < 0)
             {
                 cout << arr[i];
             }
         }
         else // exponent
         {
-            if (arr[i] == 1)
+            if (arr[i - 1] == 0)
+            {
+                cout;
+            }
+            else if (arr[i] == 1)
             {
                 cout << "x";
             }
@@ -194,10 +284,6 @@ void print(int *arr, int size)
         }
     }
     cout << endl;
-}
-
-int *add(int arr1[], int size1, int arr2[], int size2)
-{
 }
 
 void canonical(int *arr, int size)
@@ -283,7 +369,7 @@ string flip(string s)
         {
             result = result + to_string(i) + ' ';
         }
-        
+
         counter++;
     }
     return result;
