@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <memory>
+#include <string.h>
 using namespace std;
 
 /**
@@ -15,27 +16,30 @@ class block
 private:
 	// total memory that block class controls
 	// we use a smart pointer to avoid memory leak
-	inline static shared_ptr<uint64_t[]> pool = make_unique<uint64_t[]>((4000000));
+	//inline static unique_ptr<char[]> pool = make_unique<char[]>((20000));
+	inline static unique_ptr<char[]> pool = [] {
+		unique_ptr<char[]> pool = make_unique<char[]>(20000);
+		void * dp = (void*)pool.get();
+		*(int*)dp = 5;
+		cout << (int) pool[0] << endl;
+		cout << (int) pool[1] << endl;
+		return pool;
+	}();
 	// stats
-	static int numBlocks;
-	static int szAllocated;
+	inline static int numBlocks = 0;
+	inline static int szAllocated = 0;
 	int missCounter;
 
 public:
 	// ptr to start of usable block
 	// dumb pointer so we can do pointer arithmetic
-	uint64_t *p = NULL;
+	void *p = NULL;
 
 	block(int low, int high, int sizeOfT)
 	{
-		// allocate memory here
+		//memory allocation goes here
 		p = pool.get();
-		pool[0] = 'c';
-		pool[1] = 'e';
-		pool[2] = INT64_MAX;
-		cout << (char)*(p+1) << endl;
-		cout << (uint64_t)*(p+2) << endl;
-
+		cout << *(int*)p << endl;
 	}
 
 	void FF(int n)
@@ -48,11 +52,9 @@ public:
 	}
 };
 
-int block::numBlocks=0;
-
 int main(void)
 {
 	block b(0, 5, sizeof(int));
-	int *ptr = (int *)b.p;
-	cout << ptr << endl;
+	cout << *(int *)b.p << endl;
+
 }
