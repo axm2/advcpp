@@ -21,7 +21,7 @@ private:
 		void * dp = (void*)pool.get();
 		*(int*)dp = 5;
 		dp = static_cast<char*>(dp)+sizeof(int);
-		*(int*)dp = 6;
+		*(int*)dp = 12;
 		// initialize list here
 		return pool;
 	}();
@@ -40,7 +40,8 @@ public:
 		//memory allocation goes here
 		p = pool.get();
 		cout << *(int*)p << endl;
-		p = static_cast<char*>(p)+4;
+		p = static_cast<int*>(p)+1;
+		//p = static_cast<char*>(p)+4;
 		cout << *(int*)p << endl;
 	}
 
@@ -58,5 +59,6 @@ int main(void)
 {
 	block b(0, 5, sizeof(int));
 	cout << *(int *)b.p << endl;
+	cout << *(static_cast<int*>(b.p)-1) << endl;
 
 }
