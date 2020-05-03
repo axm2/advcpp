@@ -1,7 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
 #include <memory>
-#include <string.h>
 using namespace std;
 
 /**
@@ -21,8 +20,9 @@ private:
 		unique_ptr<char[]> pool = make_unique<char[]>(20000);
 		void * dp = (void*)pool.get();
 		*(int*)dp = 5;
-		cout << (int) pool[0] << endl;
-		cout << (int) pool[1] << endl;
+		dp = static_cast<char*>(dp)+sizeof(int);
+		*(int*)dp = 6;
+		// initialize list here
 		return pool;
 	}();
 	// stats
@@ -39,6 +39,8 @@ public:
 	{
 		//memory allocation goes here
 		p = pool.get();
+		cout << *(int*)p << endl;
+		p = static_cast<char*>(p)+4;
 		cout << *(int*)p << endl;
 	}
 
