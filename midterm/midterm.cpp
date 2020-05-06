@@ -19,7 +19,7 @@ private:
 	inline static unique_ptr<char[]> pool = [] {
 		unique_ptr<char[]> pool = make_unique<char[]>(20000);
 		void *dp = (void *)pool.get();
-		cout << dp << endl;
+		// START OF POOL // cout << dp << endl;
 		// initialize list here
 		// LLINK
 		*static_cast<void **>(dp) = static_cast<void *>(static_cast<char *>(dp) + sizeof(dp) + sizeof(int) + sizeof(int) + sizeof(dp) + sizeof(dp) + sizeof(int) + sizeof(int));
@@ -65,6 +65,7 @@ private:
 		*static_cast<void **>(dp) = pool.get() + sizeof(dp) + sizeof(int) + sizeof(int) + sizeof(dp);
 		return pool;
 	}();
+	inline static void *AV = pool.get();
 	// stats
 	inline static int numBlocks = 0;
 	inline static int szAllocated = 0;
@@ -75,24 +76,71 @@ public:
 	// dumb pointer so we can do pointer arithmetic
 	void *p = NULL;
 
+
 	block(int low, int high, int sizeOfT)
 	{
-		int space = (high-low)*sizeOfT;
-		ALLOCATE(space);
+		int space = (high - low + 1) * sizeOfT;
+		if(ALLOCATE(space)){
+			numBlocks++;
+			szAllocated+=space;
+			cout << "Blocks allocated: " << numBlocks << endl;
+			cout << "Space allocated: " << szAllocated << " bytes" << endl;
+		}
+		
 	}
 
-	void ALLOCATE(int n)
+	bool ALLOCATE(int n)
 	{
 		// pool = AV = q
 		// p = p
-		
 
+		// SET P TO RLINK
+		p = static_cast<char *>(AV) + sizeof(p) + sizeof(int) + sizeof(int);
+		p = *static_cast<void **>(p);
+
+		// IF WE LOOP AROUND THE WHOLE LIST, STOP
+		bool flag = true;
+		while (flag)
+		{
+			int size = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(AV) + sizeof(int))));
+			//cout << size << endl;
+			if (size >= n)
+			{
+				int diff = size - n;
+				// allocate lower N words
+				// size(p) = diff
+				*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)))) = diff;
+				// uplink(p + diff -1) = p
+				*static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff + sizeof(int))) = p;
+				// set upper portion as unused
+				// TAG(p+diff-1) = 0
+				*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff)) = 0;
+				// AV = p
+				AV = p;
+				// p = p+diff
+				p = static_cast<char *>(p)+diff;
+				// size(p) = n
+				*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)))) = diff;
+				// tag(p) = tag(p+n-1) = 1
+				*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + n)) = 1;
+				return true;
+			}
+			// p = RLINK(p)
+			p = *static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int)));
+			missCounter++;
+			flag = false;
+		}
+		cout << "No space can be allocated!" << endl;
+		return false;
 	}
 };
 
 int main(void)
 {
-	block b(0, 5, sizeof(int));
-	//cout << *(int *)b.p << endl;
-	//cout << *(static_cast<int *>(b.p) - 1) << endl;
+	for (int i=0;i<100;i++){
+		int low = rand() % 100;
+		int high = low + rand() % 200;
+		block b (low, high, sizeof(int));
+	}
+
 }
