@@ -78,26 +78,27 @@ public:
 	// dumb pointer so we can do pointer arithmetic
 	void *p = NULL;
 
-
 	block(int low, int high, int sizeOfT)
 	{
 		int space = (high - low + 1) * sizeOfT;
-		if(szAllocated<20000 && ALLOCATE(space)){
+		if (ALLOCATE(space))
+		{
 			numBlocks++;
-			szAllocated+=space;
+			szAllocated += space;
 			cout << "Blocks allocated: " << numBlocks << endl;
 			cout << "Space allocated: " << szAllocated << " bytes" << endl;
-			avgSz = szAllocated/numBlocks;
+			avgSz = szAllocated / numBlocks;
 			cout << "Average block size on list " << avgSz << "bytes" << endl;
 			cout << "Blocks on the free list " << freeBlocks << endl;
 			cout << "Misses before we found a suitable block " << missCounter << endl;
 		}
-		else cout << "No space can be allocated!" << endl;
-		
+		else
+			cout << "No space can be allocated!" << endl;
 	}
 
 	bool ALLOCATE(int n)
 	{
+		// TODO: something's defenitely wrong with the size...
 		// pool = AV = q
 		// p = p
 
@@ -109,28 +110,48 @@ public:
 		//bool flag = true;
 		while (p)
 		{
-			int size = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(AV) + sizeof(int))));
-			//cout << size << endl;
+			int size = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int))));
+			cout << "SIZE" << size << endl;
 			if (size >= n)
 			{
 				int diff = size - n;
-				// allocate lower N words
-				// size(p) = diff
-				*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)))) = diff;
-				// uplink(p + diff -1) = p
-				*static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff + sizeof(int))) = p;
-				// set upper portion as unused
-				// TAG(p+diff-1) = 0
-				*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff)) = 0;
-				// AV = p
-				AV = p;
-				// p = p+diff
-				p = static_cast<char *>(p)+diff;
-				// size(p) = n
-				*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)))) = diff;
-				// tag(p) = tag(p+n-1) = 1
-				*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + n)) = 1;
-				return true;
+				if (diff < 50)
+				{
+					cout << "Epsilon" << endl;
+					// ALLOCATE WHOLE BLOCK
+					// RLINK(LLINK(P)) = RLINK(p)
+					*static_cast<void **>(*static_cast<void **>(p)) = *static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)+sizeof(int)));
+
+					// LLINK(RLINK(p)) = LLINK(p)
+					*static_cast<void **>(static_cast<void *>(*static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int))))) = *static_cast<void **>(p);
+
+					//TAG(p)=TAG(p)+size(p)-1 = 1
+					*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + size)) = 1;
+
+					// AV = LLINK(p)
+					AV = *static_cast<void **>(p);
+
+				}
+				else
+				{
+					// allocate lower N words
+					// size(p) = diff
+					*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)))) = diff;
+					// uplink(p + diff -1) = p
+					*static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff + sizeof(int))) = p;
+					// set upper portion as unused
+					// TAG(p+diff-1) = 0
+					*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff)) = 0;
+					// AV = p
+					AV = p;
+					// p = p+diff
+					p = static_cast<char *>(p) + diff;
+					// size(p) = n
+					*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)))) = diff;
+					// tag(p) = tag(p+n-1) = 1
+					*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + n)) = 1;
+					return true;
+				}
 			}
 			// p = RLINK(p)
 			p = *static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int)));
@@ -145,113 +166,113 @@ template <class T>
 class SA
 {
 private:
-    int low, high;
-    T *p;
+	int low, high;
+	T *p;
 
 public:
-    // default constructor
-    // allows for writing things like SA a;
+	// default constructor
+	// allows for writing things like SA a;
 
-    SA()
-    {
-        low = 0;
-        high = -1;
-        p = NULL;
-    }
+	SA()
+	{
+		low = 0;
+		high = -1;
+		p = NULL;
+	}
 
-    // 2 parameter constructor lets us write
-    // SA x(10,20);
+	// 2 parameter constructor lets us write
+	// SA x(10,20);
 
-    SA(int l, int h)
-    {
-        if ((h - l + 1) <= 0)
-        {
-            cout << "constructor error in bounds definition" << endl;
-            exit(1);
-        }
-        low = l;
-        high = h;
-        p = new T[h - l + 1];
-    }
+	SA(int l, int h)
+	{
+		if ((h - l + 1) <= 0)
+		{
+			cout << "constructor error in bounds definition" << endl;
+			exit(1);
+		}
+		low = l;
+		high = h;
+		p = new T[h - l + 1];
+	}
 
-    // single parameter constructor lets us
-    // create a SA almost like a "standard" one by writing
-    // SA x(10); and getting an array x indexed from 0 to 9
+	// single parameter constructor lets us
+	// create a SA almost like a "standard" one by writing
+	// SA x(10); and getting an array x indexed from 0 to 9
 
-    SA(int i)
-    {
-        low = 0;
-        high = i - 1;
-		block z (0,high, sizeof(int));
-		p = (T*)z.p;
-        //p = new T[i];
-    }
-    // copy constructor for pass by value and
-    // initialization
+	SA(int i)
+	{
+		low = 0;
+		high = i - 1;
+		block z(0, high, sizeof(int));
+		p = (T *)z.p;
+		//p = new T[i];
+	}
+	// copy constructor for pass by value and
+	// initialization
 
-    SA(const SA &s)
-    {
-        int size = s.high - s.low + 1;
-        p = new T[size];
-        for (int i = 0; i < size; i++)
-            p[i] = s.p[i];
-        low = s.low;
-        high = s.high;
-    }
-    // destructor
+	SA(const SA &s)
+	{
+		int size = s.high - s.low + 1;
+		p = new T[size];
+		for (int i = 0; i < size; i++)
+			p[i] = s.p[i];
+		low = s.low;
+		high = s.high;
+	}
+	// destructor
 
-    ~SA()
-    {
-        //delete[] p;
+	~SA()
+	{
+		//delete[] p;
 		// This should call free instead
-    }
-    //overloaded [] lets us write
-    //SA x(10,20); x[15]= 100;
+	}
+	//overloaded [] lets us write
+	//SA x(10,20); x[15]= 100;
 
-    T &operator[](int i)
-    {
-        if (i < low || i > high)
-        {
-            cout << "index " << i << " out of range" << endl;
-            exit(1);
-        }
-        return p[i - low];
-    }
+	T &operator[](int i)
+	{
+		if (i < low || i > high)
+		{
+			cout << "index " << i << " out of range" << endl;
+			exit(1);
+		}
+		return p[i - low];
+	}
 
-    // overloaded assignment lets us assign
-    // one SA to another
+	// overloaded assignment lets us assign
+	// one SA to another
 
-    SA &operator=(const SA &s)
-    {
-        if (this == &s)
-            return *this;
-        delete[] p;
-        int size = s.high - s.low + 1;
-        p = new int[size];
-        for (int i = 0; i < size; i++)
-            p[i] = s.p[i];
-        low = s.low;
-        high = s.high;
-        return *this;
-    }
+	SA &operator=(const SA &s)
+	{
+		if (this == &s)
+			return *this;
+		delete[] p;
+		int size = s.high - s.low + 1;
+		p = new int[size];
+		for (int i = 0; i < size; i++)
+			p[i] = s.p[i];
+		low = s.low;
+		high = s.high;
+		return *this;
+	}
 
-    // overloads << so we can directly print SAs
+	// overloads << so we can directly print SAs
 
-    friend ostream &operator<<(ostream &os, SA s);
+	friend ostream &operator<<(ostream &os, SA s);
 };
 ostream &operator<<(ostream &os, SA<int> s)
 {
-    int size = s.high - s.low + 1;
-    for (int i = 0; i < size; i++)
-        cout << s.p[i] << " ";
-    return os;
+	int size = s.high - s.low + 1;
+	for (int i = 0; i < size; i++)
+		cout << s.p[i] << " ";
+	return os;
 }
 ostream &operator<<(ostream &os, SA<double> s)
 {
-    int size = s.high - s.low + 1;
-    for (int i = 0; i < size; i++)
-        cout << s.p[i] << " ";
-    return os;
+	int size = s.high - s.low + 1;
+	for (int i = 0; i < size; i++)
+		cout << s.p[i] << " ";
+	return os;
 }
 
 int main(void)
@@ -263,10 +284,10 @@ int main(void)
 	cout << "------Printing the value of SA[0]------" << endl;
 	cout << arr[0] << endl;
 	cout << "------Attempting to make 100 blocks of random size------" << endl;
-	for (int i=0;i<100;i++){
+	for (int i = 0; i < 100; i++)
+	{
 		int low = rand() % 100;
 		int high = low + rand() % 120;
-		block b (low, high, sizeof(int));
+		block b(low, high, sizeof(int));
 	}
-
 }
