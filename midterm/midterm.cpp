@@ -19,7 +19,7 @@ private:
 	inline static unique_ptr<char[]> pool = [] {
 		unique_ptr<char[]> pool = make_unique<char[]>(20000);
 		void *dp = (void *)pool.get();
-		// START OF POOL // cout << dp << endl;
+		cout << "START OF POOL" << dp << endl;
 		// initialize list here
 		// LLINK
 		*static_cast<void **>(dp) = static_cast<void *>(static_cast<char *>(dp) + sizeof(dp) + sizeof(int) + sizeof(int) + sizeof(dp) + sizeof(dp) + sizeof(int) + sizeof(int));
@@ -105,17 +105,18 @@ public:
 		// SET P TO RLINK
 		p = static_cast<char *>(AV) + sizeof(p) + sizeof(int) + sizeof(int);
 		p = *static_cast<void **>(p);
+		void * pcpy = p;
 
 		// IF WE LOOP AROUND THE WHOLE LIST, STOP
 		//bool flag = true;
 		while (p)
 		{
-			int size = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int))));
+			int size = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)+sizeof(p))));
 			cout << "SIZE" << size << endl;
 			if (size >= n)
 			{
 				int diff = size - n;
-				if (diff < 50)
+				if (diff < 100)
 				{
 					cout << "Epsilon" << endl;
 					// ALLOCATE WHOLE BLOCK
@@ -136,7 +137,7 @@ public:
 				{
 					// allocate lower N words
 					// size(p) = diff
-					*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)))) = diff;
+					*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)+sizeof(p)))) = diff;
 					// uplink(p + diff -1) = p
 					*static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff + sizeof(int))) = p;
 					// set upper portion as unused
@@ -154,7 +155,7 @@ public:
 				}
 			}
 			// p = RLINK(p)
-			p = *static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int)));
+			p = *static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(p) + sizeof(int) + sizeof(int)));
 			missCounter++;
 			//flag = false;
 		}
@@ -277,17 +278,18 @@ ostream &operator<<(ostream &os, SA<double> s)
 
 int main(void)
 {
-	cout << "------Initializing SA by using a block------" << endl;
-	SA<int> arr(3);
-	cout << "------Placing a value 5 into the SA------" << endl;
-	arr[0] = 5;
-	cout << "------Printing the value of SA[0]------" << endl;
-	cout << arr[0] << endl;
-	cout << "------Attempting to make 100 blocks of random size------" << endl;
-	for (int i = 0; i < 100; i++)
-	{
-		int low = rand() % 100;
-		int high = low + rand() % 120;
-		block b(low, high, sizeof(int));
-	}
+	block q(0,4997, sizeof(int));
+	// cout << "------Initializing SA by using a block------" << endl;
+	// SA<int> arr(3);
+	// cout << "------Placing a value 5 into the SA------" << endl;
+	// arr[0] = 5;
+	// cout << "------Printing the value of SA[0]------" << endl;
+	// cout << arr[0] << endl;
+	// cout << "------Attempting to make 100 blocks of random size------" << endl;
+	// for (int i = 0; i < 100; i++)
+	// {
+	// 	int low = rand() % 100;
+	// 	int high = low + rand() % 120;
+	// 	block b(low, high, sizeof(int));
+	// }
 }
