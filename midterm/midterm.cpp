@@ -5,7 +5,7 @@ using namespace std;
 
 /**
  * @brief 
- * Each allocated memory block will have a 32 byte header and a 16 byte footer
+ * Each memory block (except for head node) will have a 24 byte header and a 12 byte footer
  * The header consists of LLINK, TAG, SIZE, RLINK
  * Footer consists of TAG AND UPLINK
  */
@@ -248,7 +248,9 @@ public:
 		}
 		low = l;
 		high = h;
-		p = new T[h - l + 1];
+		//p = new T[h - l + 1];
+		block z(low,high,sizeof(T));
+		p = (T *)z.p;
 	}
 
 	// single parameter constructor lets us
@@ -259,7 +261,7 @@ public:
 	{
 		low = 0;
 		high = i - 1;
-		block z(0, high, sizeof(int));
+		block z(low, high, sizeof(T));
 		p = (T *)z.p;
 		//p = new T[i];
 	}
@@ -269,7 +271,9 @@ public:
 	SA(const SA &s)
 	{
 		int size = s.high - s.low + 1;
-		p = new T[size];
+		//p = new T[size];
+		block z(s.low+1,s.high,sizeof(T));
+		p = (T *)z.p;
 		for (int i = 0; i < size; i++)
 			p[i] = s.p[i];
 		low = s.low;
@@ -334,12 +338,6 @@ ostream &operator<<(ostream &os, SA<double> s)
 
 int main(void)
 {
-	// //block q(0, 4984, sizeof(int));
-	// for (int i = 0; i < 100; i++)
-	// {
-	// 	block f(0, 199, sizeof(int));
-	// 	block::free(f.p);
-	// }
 
 	cout << "------Initializing SA by using a block------" << endl;
 	// I only modified the 1 parameter constructor to use a block
