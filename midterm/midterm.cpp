@@ -15,11 +15,11 @@ class block
 private:
 	// total memory that block class controls
 	// we use a smart pointer to avoid memory leak
-	//inline static unique_ptr<char[]> pool = make_unique<char[]>((20000));
+	//inline static unique_ptr<char[]> pool = make_unique<char[]>((40000));
 	inline static unique_ptr<char[]> pool = [] {
-		unique_ptr<char[]> pool = make_unique<char[]>(20000);
+		unique_ptr<char[]> pool = make_unique<char[]>(40000);
 		void *dp = (void *)pool.get();
-		cout << "START OF POOL" << dp << endl;
+		cout << "START OF POOL " << dp << endl;
 		// initialize list here
 		// LLINK
 		*static_cast<void **>(dp) = static_cast<void *>(static_cast<char *>(dp) + sizeof(dp) + sizeof(int) + sizeof(int) + sizeof(dp) + sizeof(dp) + sizeof(int) + sizeof(int));
@@ -46,17 +46,16 @@ private:
 		dp = static_cast<char *>(dp) + sizeof(int);
 
 		// SIZE
-		int size = 20000 - 5 * (sizeof(int)) - 5 * (sizeof(dp));
+		int size = 40000 - 5 * (sizeof(int)) - 5 * (sizeof(dp));
 		*static_cast<int *>(dp) = size;
 		dp = static_cast<char *>(dp) + sizeof(int);
 
 		// RLINK
 		*static_cast<void **>(dp) = static_cast<void *>(static_cast<char *>(dp) - sizeof(dp) - sizeof(int) - sizeof(int) - sizeof(dp) - sizeof(dp) - sizeof(int) - sizeof(int));
+		dp = static_cast<char *>(dp) + sizeof(int);
 
 		// move dp to end of block
-		// reset to beginning by getting, then move it
-		dp = (void *)pool.get();
-		dp = static_cast<char *>(dp) + 20000 - (sizeof(dp) + sizeof(int));
+		dp = static_cast<char *>(dp) + size;
 		// TAG
 		*static_cast<int *>(dp) = 0;
 		dp = static_cast<char *>(dp) + sizeof(int);
@@ -69,7 +68,6 @@ private:
 	// stats
 	inline static int numBlocks = 0;
 	inline static int szAllocated = 0;
-	inline static int avgSz = 0;
 	inline static int freeBlocks = 0;
 	int missCounter = 0;
 
@@ -87,13 +85,61 @@ public:
 			szAllocated += space;
 			cout << "Blocks allocated: " << numBlocks << endl;
 			cout << "Space allocated: " << szAllocated << " bytes" << endl;
-			avgSz = szAllocated / numBlocks;
+			int avgSz = szAllocated / numBlocks;
 			cout << "Average block size on list " << avgSz << "bytes" << endl;
 			cout << "Blocks on the free list " << freeBlocks << endl;
 			cout << "Misses before we found a suitable block " << missCounter << endl;
 		}
 		else
 			cout << "No space can be allocated!" << endl;
+	}
+
+	static void free(void *pp)
+	{
+		cout << "DESTROYING!" << endl;
+		numBlocks--;
+		freeBlocks++;
+		int size = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(pp) - sizeof(int) - sizeof(p))));
+		szAllocated -= size;
+
+		cout << "Blocks allocated: " << numBlocks << endl;
+		cout << "Space allocated: " << szAllocated << " bytes" << endl;
+		if (numBlocks > 0)
+		{
+			int avgSz = szAllocated / numBlocks;
+			cout << "Average block size on list " << avgSz << "bytes" << endl;
+		}
+		cout << "Blocks on the free list " << freeBlocks << endl;
+
+		// return a block beginning at p and of size size(p)
+		// n = size(p)
+		int n = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(pp) - sizeof(int) - sizeof(p))));
+		// check tags to see which blocks are available
+		int LT = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(pp) - sizeof(pp) - sizeof(int) - sizeof(int))));
+		int RT = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(pp) + n)));
+		if (LT == 1 && RT == 1)
+		{
+			cout << "Left and right allocated" << endl;
+			// CREATE BOTH BLANK TAGS
+			*static_cast<int *>(static_cast<void *>(static_cast<char *>(pp) - sizeof(int) - sizeof(int) + sizeof(pp))) = 0; // upper tag
+			*static_cast<int *>(static_cast<void *>(static_cast<char *>(pp) + n)) = 0;										//lower tag
+			//create uplink UPLINK(p+n-1) = P
+			*static_cast<void **>(static_cast<void *>(static_cast<char *>(pp) + n + sizeof(int))) = static_cast<char *>(pp) - sizeof(int) - sizeof(int) - sizeof(pp) - sizeof(pp);
+			//create LLINK LLINK(p) = AV
+			*static_cast<void **>(static_cast<void *>(static_cast<char *>(pp) - sizeof(pp) - sizeof(pp) - sizeof(int) - sizeof(int))) = AV;
+			//create RLINK RLINK(p) = RLINK(AV)
+			*static_cast<void **>(static_cast<void *>(static_cast<char *>(pp) - sizeof(pp))) = *static_cast<void **>(static_cast<void *>(static_cast<char *>(AV) + sizeof(int) + sizeof(int) + sizeof(pp)));
+			// INSERT BLOCK INTO FREE LIST
+			// LLINK(RLINK(p)) = p
+			*static_cast<void **>(*static_cast<void **>(static_cast<void *>(static_cast<char *>(pp) - sizeof(pp)))) = static_cast<char *>(pp) - sizeof(pp) - sizeof(int) - sizeof(int) - sizeof(pp);
+			// RLINK(AV)=p
+			*static_cast<void **>(static_cast<void *>(static_cast<char *>(AV) + sizeof(pp) + sizeof(int) + sizeof(int))) = static_cast<char *>(pp) - sizeof(int) - sizeof(int) - sizeof(pp) - sizeof(pp);
+		}
+		else
+		{
+			cout << "UH OH!!!!";
+			return;
+		}
 	}
 
 	bool ALLOCATE(int n)
@@ -105,52 +151,60 @@ public:
 		// SET P TO RLINK
 		p = static_cast<char *>(AV) + sizeof(p) + sizeof(int) + sizeof(int);
 		p = *static_cast<void **>(p);
-		void * pcpy = p;
 
 		// IF WE LOOP AROUND THE WHOLE LIST, STOP
-		//bool flag = true;
-		while (p)
+		do
 		{
-			int size = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)+sizeof(p))));
-			cout << "SIZE" << size << endl;
+			//cout << "P" << p << endl;
+			int size = *(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(p))));
+			//cout << "SIZE" << size << endl;
 			if (size >= n)
 			{
-				int diff = size - n;
-				if (diff < 100)
-				{
-					cout << "Epsilon" << endl;
-					// ALLOCATE WHOLE BLOCK
-					// RLINK(LLINK(P)) = RLINK(p)
-					*static_cast<void **>(*static_cast<void **>(p)) = *static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)+sizeof(int)));
+				int diff = size - (n + 3 * sizeof(p) + 3 * sizeof(int));
+				// if (diff < 64)
+				// {
+				// 	cout << "Epsilon NOT COMPLETE!!!" << endl;
+				// 	//cout << "p" << p << endl;
+				// 	// ALLOCATE WHOLE BLOCK
+				// 	// RLINK(LLINK(P)) = RLINK(p)
+				// 	*static_cast<void **>(*static_cast<void **>(p)) = *static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(p) + sizeof(int) + sizeof(int)));
 
-					// LLINK(RLINK(p)) = LLINK(p)
-					*static_cast<void **>(static_cast<void *>(*static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int))))) = *static_cast<void **>(p);
+				// 	// LLINK(RLINK(p)) = LLINK(p)
+				// 	//*static_cast<void **>(static_cast<void *>(*static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int))))) = *static_cast<void **>(p);
+				// 	*static_cast<void **>(*static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(p) + sizeof(int) + sizeof(int)))) = *static_cast<void **>(p);
 
-					//TAG(p)=TAG(p)+size(p)-1 = 1
-					*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + size)) = 1;
+				// 	//TAG(p)=TAG(p)+size(p)-1 = 1
+				// 	*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(p) + sizeof(int) + sizeof(int) + sizeof(p) + size)) = 1; //ending TAG
+				// 	*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(p))) = 1;												 // first TAG
 
-					// AV = LLINK(p)
-					AV = *static_cast<void **>(p);
+				// 	// AV = LLINK(p)
+				// 	AV = *static_cast<void **>(p);
 
-				}
-				else
+				// 	return true;
+				// }
+				if (true)
 				{
 					// allocate lower N words
 					// size(p) = diff
-					*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)+sizeof(p)))) = diff;
+					*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(p)))) = diff;
 					// uplink(p + diff -1) = p
-					*static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff + sizeof(int))) = p;
+					*static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff + sizeof(int))) = p;
 					// set upper portion as unused
 					// TAG(p+diff-1) = 0
-					*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff)) = 0;
+					*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(p) + sizeof(int) + sizeof(int) + sizeof(p) + diff)) = 0;
 					// AV = p
 					AV = p;
-					// p = p+diff
-					p = static_cast<char *>(p) + diff;
+					// p = p+diff+header+allocatedheader
+					// move p
+					p = static_cast<char *>(p) + diff + sizeof(p) + sizeof(int) + sizeof(int) + sizeof(p) + sizeof(int) + sizeof(p);
+					// ----- MAKING ALLOCATED TAGS ------
 					// size(p) = n
-					*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int)))) = diff;
+					*(static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(p)))) = n;
 					// tag(p) = tag(p+n-1) = 1
-					*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(int) + sizeof(int) + sizeof(p) + n)) = 1;
+					*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(p))) = 1; // first tag
+					*static_cast<int *>(static_cast<void *>(static_cast<char *>(p) + sizeof(p) + sizeof(int) + sizeof(int) + sizeof(p) + n)) = 1;
+					// move p so we can use it
+					p = static_cast<char *>(p) + sizeof(p) + sizeof(int) + sizeof(int) + sizeof(p);
 					return true;
 				}
 			}
@@ -158,7 +212,8 @@ public:
 			p = *static_cast<void **>(static_cast<void *>(static_cast<char *>(p) + sizeof(p) + sizeof(int) + sizeof(int)));
 			missCounter++;
 			//flag = false;
-		}
+		} while (p != *static_cast<void **>(static_cast<void *>(static_cast<char *>(AV) + sizeof(AV) + sizeof(int) + sizeof(int))));
+		p = NULL;
 		return false;
 	}
 };
@@ -225,6 +280,7 @@ public:
 	~SA()
 	{
 		//delete[] p;
+		block::free(p);
 		// This should call free instead
 	}
 	//overloaded [] lets us write
@@ -278,18 +334,36 @@ ostream &operator<<(ostream &os, SA<double> s)
 
 int main(void)
 {
-	block q(0,4997, sizeof(int));
-	// cout << "------Initializing SA by using a block------" << endl;
-	// SA<int> arr(3);
-	// cout << "------Placing a value 5 into the SA------" << endl;
-	// arr[0] = 5;
-	// cout << "------Printing the value of SA[0]------" << endl;
-	// cout << arr[0] << endl;
-	// cout << "------Attempting to make 100 blocks of random size------" << endl;
+	// //block q(0, 4984, sizeof(int));
 	// for (int i = 0; i < 100; i++)
 	// {
-	// 	int low = rand() % 100;
-	// 	int high = low + rand() % 120;
-	// 	block b(low, high, sizeof(int));
+	// 	block f(0, 199, sizeof(int));
+	// 	block::free(f.p);
 	// }
+
+	cout << "------Initializing SA by using a block------" << endl;
+	// I only modified the 1 parameter constructor to use a block
+	SA<int> arr(3);
+	cout << "------Placing a values 5,9,355 into the SA------" << endl;
+	arr[0] = 5;
+	arr[1] = 9;
+	arr[2] = 355;
+	cout << "------Printing the value of SA[0], SA[1] SA[2]------" << endl;
+	cout << arr[0] << endl;
+	cout << arr[1] << endl;
+	cout << arr[2] << endl;
+	cout << "------Attempting to make 100 blocks of random size------" << endl;
+	for (int i = 0; i < 100; i++)
+	{
+		int low = rand() % 100;
+		int high = low + rand() % 80;
+		block b(low, high, sizeof(int));
+		// user needs to manually call free similar to how a user has to manually call free when using malloc
+	}
+	cout << "------reprinting the value of SA[0], SA[1] SA[2] to show we haven't lost information------" << endl;
+	cout << arr[0] << endl;
+	cout << arr[1] << endl;
+	cout << arr[2] << endl;
+
+	cout << "--------Now that the program is done, SA will call free on the block-------" << endl;
 }
