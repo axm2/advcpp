@@ -307,9 +307,10 @@ public:
 	{
 		if (this == &s)
 			return *this;
-		delete[] p;
+		block::free(p);
 		int size = s.high - s.low + 1;
-		p = new int[size];
+		block z(s.low+1,s.high,sizeof(T));
+		p = (T *)z.p;
 		for (int i = 0; i < size; i++)
 			p[i] = s.p[i];
 		low = s.low;
@@ -340,7 +341,6 @@ int main(void)
 {
 
 	cout << "------Initializing SA by using a block------" << endl;
-	// I only modified the 1 parameter constructor to use a block
 	SA<int> arr(3);
 	cout << "------Placing a values 5,9,355 into the SA------" << endl;
 	arr[0] = 5;
@@ -356,7 +356,7 @@ int main(void)
 		int low = rand() % 100;
 		int high = low + rand() % 80;
 		block b(low, high, sizeof(int));
-		// user needs to manually call free similar to how a user has to manually call free when using malloc
+		// example from assignment page
 	}
 	cout << "------reprinting the value of SA[0], SA[1] SA[2] to show we haven't lost information------" << endl;
 	cout << arr[0] << endl;
